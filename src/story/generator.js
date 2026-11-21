@@ -43,11 +43,19 @@ export function generateStory({ seed, zone = 'auto', cast = DEFAULT_CAST, templa
 
   const names = { A: CHARACTERS[cast.A].name, B: CHARACTERS[cast.B].name, C: CHARACTERS[cast.C].name };
   let lineNo = 0;
+  const linked = {}; // groupe de variantes liées → indice tiré une seule fois (question/réponse cohérentes)
   const steps = tpl.steps.map((st) => {
     const step = { ...st };
     if (step.zone && zone !== 'auto') step.zone = zone;
     if (step.l) {
-      step.text = fill(rng.pick(step.l), names);
+      let idx;
+      if (step.v) {
+        if (linked[step.v] == null) linked[step.v] = Math.floor(rng.next() * step.l.length);
+        idx = linked[step.v];
+      } else idx = Math.floor(rng.next() * step.l.length);
+      step.text = fill(step.l[idx], names);
+      delete step.v;
+      delete step.indep;
       step.lineId = `l${String(++lineNo).padStart(2, '0')}`;
       delete step.l;
     }

@@ -159,3 +159,78 @@ test('aucun personnage ne traverse un autre (tous scénarios × décors, image p
     }
   }
 });
+
+// ---------------------------------------------------------------- cohérence des dialogues
+// Défaut évité : une réponse qui ne correspond pas à la question (« Et une lampe de poche ? » →
+// « Un parapluie, voilà ! »), parce que chaque réplique tirait sa variante indépendamment.
+const coherenceWords = (t) => new Set(t.toLowerCase().replace(/\{[abc]\}/g, ' ').split(/[^\p{L}]+/u).filter((w) => w.length >= 5));
+
+/** Mots présents dans CERTAINES variantes d'une réplique précédente (pas toutes) et repris plus loin. */
+function unlinkedDependencies(tpl) {
+  const found = [];
+  const usedIndep = new Set();
+  tpl.steps.forEach((sj, j) => {
+    if (!sj.l) return;
+    tpl.steps.slice(0, j).forEach((si, i) => {
+      if (!si.l || si.l.length < 2 || (si.v && si.v === sj.v)) return;
+      const sets = si.l.map(coherenceWords);
+      const distinct = [...new Set(sets.flatMap((s) => [...s]))].filter((w) => !sets.every((s) => s.has(w)));
+      for (const w of distinct) {
+        if (!sj.l.some((l) => coherenceWords(l).has(w))) continue;
+        if (sj.indep?.includes(w)) { usedIndep.add(`${j}:${w}`); continue; }
+        found.push(`réplique ${j} « ${sj.l[0].slice(0, 45)}… » reprend « ${w} » de la réplique ${i} sans lui être liée (v)`);
+      }
+    });
+  });
+  return { found, usedIndep };
+}
+
+test('dialogues : les variantes liées (v) ont le même nombre de choix dans tout le groupe', () => {
+  for (const t of TEMPLATES) {
+    const sizes = {};
+    for (const st of t.steps) {
+      if (!st.v) continue;
+      assert.ok(st.l, `${t.id} : « v » sur une étape sans réplique`);
+      sizes[st.v] ??= st.l.length;
+      assert.equal(st.l.length, sizes[st.v], `${t.id} : groupe « ${st.v} » de tailles différentes`);
+    }
+    for (const [g] of Object.entries(sizes)) {
+      assert.ok(t.steps.filter((s) => s.v === g).length >= 2, `${t.id} : groupe « ${g} » utilisé une seule fois`);
+    }
+  }
+});
+
+test('dialogues : aucune réponse ne dépend d\'une variante précédente sans y être liée', () => {
+  const problems = TEMPLATES.flatMap((t) => unlinkedDependencies(t).found.map((p) => `${t.id} : ${p}`));
+  assert.deepEqual(problems, [], `\n${problems.join('\n')}\n→ liez les répliques (même « v ») ou, si c'est une simple coïncidence, ajoutez le mot dans « indep ».`);
+});
+
+test('dialogues : chaque mot déclaré « indep » correspond à une vraie reprise (pas d\'exception oubliée)', () => {
+  for (const t of TEMPLATES) {
+    const { usedIndep } = unlinkedDependencies(t);
+    t.steps.forEach((st, j) => {
+      for (const w of st.indep || []) assert.ok(usedIndep.has(`${j}:${w}`), `${t.id} : « ${w} » déclaré indep à la réplique ${j} mais inutile`);
+    });
+  }
+});
+
+test('dialogues générés : dans chaque épisode, les répliques liées utilisent bien la même variante', () => {
+  for (const t of TEMPLATES) {
+    for (let seed = 1; seed <= 40; seed++) {
+      const story = generateStory({ seed, template: t.id });
+      const names = story.names;
+      const fill = (x) => x.replace(/\{([ABC])\}/g, (_, r) => names[r]);
+      const chosen = {};
+      let k = 0;
+      t.steps.forEach((st) => {
+        if (!st.l) return;
+        const line = story.steps.filter((s) => s.lineId)[k++];
+        if (!st.v) return;
+        const idx = st.l.map(fill).indexOf(line.text);
+        assert.ok(idx >= 0, `${t.id}/${seed} : réplique introuvable`);
+        chosen[st.v] ??= idx;
+        assert.equal(idx, chosen[st.v], `${t.id}/${seed} : groupe « ${st.v} » incohérent (« ${line.text} »)`);
+      });
+    }
+  }
+});

@@ -42,3 +42,14 @@ Le décor peut être imposé (couloir / classe / cour) : toutes les marques ont 
 - 2 épisodes complets rendus et contrôlés plan par plan (6 corrections de mise en scène).
 
 Commande : `npm run story -- --seed 42 [--zone yard] [--template concours-saut] [--cast nino,zoe,max]`
+
+## Cohérence des dialogues (ajout après retour utilisateur)
+Défaut constaté dans « Le sac de Zoé » : « Et une lampe de poche ? » → « Un parapluie, voilà ! »
+(chaque réplique tirait sa variante indépendamment). Correction :
+- `v: 'groupe'` : les répliques d'un même groupe utilisent la même variante (question ↔ réponse).
+- `indep: ['mot']` : reprise d'un mot vérifiée à la main (simple coïncidence).
+- Test strict : toute réplique qui reprend un mot présent dans seulement certaines variantes d'une
+  réplique précédente doit être liée ou déclarée `indep`, sinon le test échoue. Contre-épreuve faite.
+- 11 groupes liés ajoutés dans les 6 histoires (vérité, excuse, casier vivant, alarme, roi/champion,
+  abeille/guêpe, rumeur, menu soupe/purée, objet, animal girafe/dinosaure avec accords il/elle).
+Note : les graines déjà utilisées ne redonnent plus exactement les mêmes répliques.
