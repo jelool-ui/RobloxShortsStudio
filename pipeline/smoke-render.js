@@ -1,6 +1,6 @@
 // Test de bout en bout de la chaîne technique (phase 2) :
 // build → Playwright rend N images → FFmpeg (vidéo + bip audio) → vérification ffprobe.
-// Usage : npm run build && npm run smoke  [-- --seconds 3]
+// Usage : npm run build && npm run smoke  [-- --seconds 3 --scene showcase|test]
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, rmSync, existsSync } from 'node:fs';
@@ -9,7 +9,9 @@ import { startPreview } from './lib/server.js';
 import { verifyMp4 } from './lib/verify.js';
 
 const args = process.argv.slice(2);
-const seconds = Number(args[args.indexOf('--seconds') + 1]) || 2;
+const arg = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d);
+const seconds = Number(arg('--seconds', 2));
+const sceneName = arg('--scene', 'showcase');
 const W = 1080, H = 1920, FPS = 30, N = seconds * FPS;
 const outDir = 'output/smoke';
 const framesDir = join(outDir, 'frames');
@@ -28,7 +30,7 @@ let exitCode = 0;
 try {
   const page = await browser.newPage({ viewport: { width: W, height: H } });
   page.on('pageerror', (e) => console.error('Erreur page :', e.message));
-  await page.goto(`${server.url}render.html?w=${W}&h=${H}&fps=${FPS}&frames=${N}`);
+  await page.goto(`${server.url}render.html?scene=${sceneName}&w=${W}&h=${H}&fps=${FPS}&frames=${N}`);
   await page.waitForFunction('window.__RSS_READY === true', null, { timeout: 30000 });
 
   const t0 = Date.now();
