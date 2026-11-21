@@ -23,7 +23,7 @@ export function createDirector(stage, sequence, { school } = {}) {
     const st = time == null ? e.state : evaluateTrack(sequence.tracks[id], time, e.seed);
     if (!st) return null;
     const s = e.c.def.scale ?? 1;
-    return { x: st.x, z: st.z, heading: st.heading, scale: s, headY: (4 + e.c.headSize / 2) * s };
+    return { x: st.x, z: st.z, heading: st.heading, scale: s, headY: (4 + e.c.headSize / 2) * s, lift: Math.max(0, st.pose?.bodyY ?? 0) * s };
   }
   const ids = Object.keys(cast);
 

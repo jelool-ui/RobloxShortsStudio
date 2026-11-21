@@ -16,20 +16,22 @@ const width = Number(params.get('w') || 1080);
 const height = Number(params.get('h') || 1920);
 const fps = Number(params.get('fps') || 30);
 const sceneName = params.get('scene') || 'demo';
+// Qualité : aa=0 désactive l'anticrénelage, shadow=taille de la carte d'ombres
+const stageOpts = { antialias: params.get('aa') !== '0', shadowSize: Number(params.get('shadow') || 2048) };
 
 let renderer, renderAt;
 let debug = {};
 if (sceneName === 'test') {
   ({ renderer, renderAt } = createTestScene({ width, height }));
 } else if (sceneName === 'showcase' || sceneName === 'demo') {
-  const stage = createStage({ width, height });
+  const stage = createStage({ width, height, ...stageOpts });
   const show = sceneName === 'demo' ? buildDemo(stage) : buildShowcase(stage);
   renderer = stage.renderer;
   renderAt = (t) => { show.update(t); stage.render(); };
   debug = { stage, show };
 } else if (sceneName === 'episode') {
   // L'épisode (storyboard JSON) est injecté par Playwright via window.loadEpisode(storyboard)
-  const stage = createStage({ width, height });
+  const stage = createStage({ width, height, ...stageOpts });
   const school = buildSchool(stage.scene);
   let director = null;
   renderer = stage.renderer;

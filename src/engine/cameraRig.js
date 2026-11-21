@@ -128,8 +128,10 @@ export function updateCamera(camera, shots, t, getChar, punches = [], allIds = [
   const sx = Math.sin(t * 1.7 + hash01(seed) * 6) * shakeA + Math.sin(t * 3.1) * shakeA * 0.4;
   const sy = Math.sin(t * 1.3 + hash01(seed + 1) * 6) * shakeA * 0.8;
 
-  const lookY = p.head ? headY - 0.15 : p.look;
-  const camY = p.head ? headY + 0.2 : p.height;
+  // Plans serrés : la caméra accompagne le sujet quand il saute (sinon la tête sort du cadre)
+  const lift = SINGLE.has(shot.type) && chars.length === 1 ? (chars[0].lift ?? 0) * 0.75 : 0;
+  const lookY = (p.head ? headY - 0.15 : p.look) + lift;
+  const camY = (p.head ? headY + 0.2 : p.height) + lift;
 
   camera.position.set(cx + Math.sin(angle) * dist + sx, camY + sy, cz + Math.cos(angle) * dist);
   const target = new THREE.Vector3(cx, lookY, cz);

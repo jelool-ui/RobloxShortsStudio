@@ -17,3 +17,9 @@ Three.js · Playwright · FFmpeg · Piper TTS · GitHub Actions — 100 % gratui
 | `npm test` | tests automatiques |
 | `npm run smoke` | test de bout en bout : rendu 3D 2 s → MP4 vérifié (`output/smoke/smoke.mp4`) |
 | `pip install -r requirements.txt` | installe Piper TTS |
+| `npm run story -- --seed 42` | génère une histoire + storyboard (sans rendu) |
+| `npm run audio -- --seed 42` | voix + lip-sync + musique + bruitages + mixage |
+| **`npm run generate -- --seed 42`** | **épisode complet : MP4 vérifié + miniature + texte YouTube** (`output/episodes/<id>/`) |
+
+Options de `generate` : `--zone auto|hallway|classroom|yard`, `--template <id>`, `--cast nino,zoe,max`,
+`--quality fast|high` (fast = 3D en 720p agrandie, 2,4× plus rapide), `--keep-frames`.
