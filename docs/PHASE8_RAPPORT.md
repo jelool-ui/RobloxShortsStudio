@@ -21,3 +21,13 @@ de lancement conforme.
 ## Tests
 64 tests, dont : client GitHub (lancement, erreurs, le jeton ne part que vers api.github.com),
 analyse des releases et exécutions, synchronisation des menus du workflow avec le code.
+
+## Test final de bout en bout (sur GitHub, dépôt réel)
+| Essai | Résultat |
+|---|---|
+| Génération n°1 (graine 777) | épisode produit, **mais** échec de l'étape de résumé (chemin relatif du manifest dans un script en ligne) → script extrait dans `pipeline/ci-summary.js`, testé (succès / absent / échec) |
+| Génération n°2 (graine 777) | ✅ **succès en 7 min 40** : « Le sac de Zoé contient TOUT », artefact `ep-sac-magique-777` (19,4 Mo, 30 jours) + release publique |
+| Contre-vérification | MP4 téléchargé depuis la release (HTTP 200) et revérifié : 45,00 s · 1080×1920 · H.264 · AAC 48 kHz · 1350 images · 30 i/s · pas d'image noire |
+| Publication du tableau de bord | ❌ refusée par la règle de l'environnement `github-pages` (« Branch main is not allowed ») → réglage à faire par le propriétaire (voir GUIDE_ANDROID §2) |
+
+Durée réelle sur GitHub : **≈ 5 min de rendu, ≈ 8 min au total** (l'estimation était de 10–12 min).

@@ -9,7 +9,13 @@ faites défiler les onglets ou utilisez « Afficher la version ordinateur ») �
 
 ## 2. Activer GitHub Pages (une seule fois)
 Dépôt → **Settings** → **Pages** (menu de gauche) → **Build and deployment** → **Source** :
-choisissez **GitHub Actions**. Prévenez-moi : je lance la publication du tableau de bord.
+choisissez **GitHub Actions**.
+
+Puis autorisez la branche `main` à publier : **Settings** → **Environments** → **github-pages** →
+section **Deployment branches and tags** → choisissez **No restriction** (ou ajoutez une règle `main`)
+→ **Save protection rules**. Ensuite : **Actions** → **Publier le tableau de bord** → **Run workflow**
+(ou prévenez-moi, je la relance).
+Sans ce réglage, la publication échoue avec : *Branch "main" is not allowed to deploy to github-pages*.
 
 ## 3. Créer votre jeton personnel (une seule fois)
 Photo de profil → **Settings** → **Developer settings** → **Personal access tokens** →
