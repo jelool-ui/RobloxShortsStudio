@@ -1,0 +1,78 @@
+# Contrôle technique : installe la chaîne complète, lance les tests,
+# rend un clip de 2 s et publie le MP4 de test comme artefact.
+# Dépôt privé → minutes comptées : déclenchement manuel, ou automatique
+# uniquement sur les branches de développement quand le code change.
+name: CI - contrôle de la chaîne
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['ccr-**']
+    paths:
+      - 'src/**'
+      - 'pipeline/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'requirements.txt'
+      - '.github/workflows/ci.yml'
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Installer FFmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: Installer les dépendances Node
+        run: npm ci
+
+      - name: Installer Chromium pour Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Installer Piper TTS
+        run: pip install -r requirements.txt
+
+      - name: Vérifier l'environnement
+        run: bash scripts/check-env.sh
+
+      - name: Infos machine (limites réelles du runner)
+        run: |
+          echo "CPU : $(nproc)"; free -h; df -h . | tail -1
+
+      - name: Tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Rendu de test (2 s) + vérification MP4
+        run: npm run smoke
+
+      - name: Publier le MP4 de test
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-mp4
+          path: output/smoke/smoke.mp4
+          if-no-files-found: error
+          retention-days: 3

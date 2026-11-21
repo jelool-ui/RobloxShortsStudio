@@ -1,0 +1,26 @@
+:root {
+  --bg: #12152b;
+  --panel: #1b1f3b;
+  --text: #f2f3ff;
+  --muted: #9aa0c8;
+  --accent: #ffc107;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text);
+  font-family: system-ui, -apple-system, Roboto, sans-serif; }
+.app { min-height: 100dvh; display: flex; flex-direction: column; }
+.top { display: flex; align-items: center; justify-content: space-between;
+  padding: 16px; background: var(--panel); }
+.top h1 { margin: 0; font-size: 1.25rem; }
+.badge { font-size: .75rem; color: var(--muted); }
+.content { flex: 1; padding: 16px; }
+.primary { width: 100%; min-height: 56px; border: 0; border-radius: 14px;
+  background: var(--accent); color: #222; font-size: 1.1rem; font-weight: 700; }
+.primary:disabled { opacity: .5; }
+.hint { color: var(--muted); }
+.tabs { display: flex; background: var(--panel); padding-bottom: env(safe-area-inset-bottom); }
+.tabs button { flex: 1; min-height: 60px; border: 0; background: none; color: var(--muted);
+  display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: .8rem; }
+.tabs button span { font-size: 1.3rem; }
+.tabs button.on { color: var(--accent); }

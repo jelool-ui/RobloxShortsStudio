@@ -78,7 +78,7 @@ Si nécessaire, un léger décalage de hauteur (FFmpeg) renforce la différence 
 
 - Durée maximale d'un job : **6 h** (notre rendu : ~5–10 min avec installation).
 - Dépôt **public** : minutes gratuites illimitées, 4 vCPU / 16 Go RAM.
-- Dépôt **privé** (offre gratuite) : **2 000 min/mois**, 2 vCPU / 7 Go, **500 Mo** de stockage
+- Dépôt **privé** (offre gratuite) ← **notre cas** : **2 000 min/mois**, 2 vCPU / 7 Go, **500 Mo** de stockage
   d'artefacts → on fixera une rétention courte (7 jours) des MP4.
 - Pas de GPU : rendu logiciel (déjà validé avec SwiftShader).
 - Les modèles Piper (~60 Mo chacun) seront mis en cache (`actions/cache`).
