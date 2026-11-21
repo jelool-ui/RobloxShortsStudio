@@ -54,7 +54,7 @@ RobloxShortsStudio/
 |---|---|---|
 | 3D | Three.js 0.170 | WebGL2 testé OK en headless (SwiftShader) |
 | Rendu | Playwright, pas de temps réel | rendu image par image déterministe : aucune saccade même sur CPU lent |
-| Performance | ~160 ms/image mesurés en 1080×1920 | 1350 images ≈ 3,6 min → très en dessous de la limite de 6 h de GitHub Actions |
+| Performance | mesuré en 1080×1920 : ~160 ms/image (cloud Claude), **~450 ms/image sur GitHub Actions (dépôt privé)** | 1350 images ≈ **10 min** sur GitHub → très en dessous de la limite de 6 h |
 | Voix | Piper TTS 1.8 (pip) | local, gratuit, testé OK |
 | Bouche | amplitude du WAV (enveloppe RMS par image) | simple, robuste, sans dépendance supplémentaire |
 | Musique / bruitages | synthèse procédurale (Python/FFmpeg) | zéro risque de licence, aucun téléchargement |
