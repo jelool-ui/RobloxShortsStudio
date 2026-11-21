@@ -1,0 +1,9 @@
+node_modules/
+dist/
+output/
+.venv/
+venv/
+assets/voices/*.onnx
+*.log
+.env
+.env.*
