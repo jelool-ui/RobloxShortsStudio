@@ -128,3 +128,34 @@ test('règle du théâtre : orientation ouverte vers la caméra', () => {
   const a = cheatFace([0, 0], [5, 0]); // regarde à droite (π/2)
   assert.ok(a > 0 && a < Math.PI / 2);
 });
+
+test('contournement : un trajet qui traverse quelqu\'un est dévié, sinon il reste droit', async () => {
+  const { detour } = await import('../src/story/storyboard.js');
+  assert.deepEqual(detour([0, 0], [10, 0], [[5, 8]]), [], 'personne sur le chemin');
+  const via = detour([0, 0], [10, 0], [[5, 0]]);
+  assert.equal(via.length, 1);
+  assert.ok(Math.hypot(via[0][0] - 5, via[0][1]) >= 2.6, 'le point de passage est hors de portée');
+  assert.ok(via[0][1] > 0, 'passe devant (côté caméra) quand l\'obstacle est pile sur la ligne');
+  const via2 = detour([0, 0], [20, 0], [[5, 0.5], [15, -0.5]]);
+  assert.ok(via2.length >= 2, 'deux obstacles → deux détours');
+});
+
+test('aucun personnage ne traverse un autre (tous scénarios × décors, image par image)', () => {
+  for (const template of TEMPLATE_IDS) {
+    for (const zone of ZONE_MODES) {
+      for (let seed = 1; seed <= 5; seed++) {
+        const sb = buildStoryboard(generateStory({ seed, zone, template }));
+        const ids = Object.keys(sb.tracks);
+        for (let f = 0; f < 45 * 30; f += 2) {
+          const p = ids.map((id) => evaluateTrack(sb.tracks[id], f / 30));
+          for (let i = 0; i < p.length; i++) {
+            for (let j = i + 1; j < p.length; j++) {
+              const d = Math.hypot(p[i].x - p[j].x, p[i].z - p[j].z);
+              assert.ok(d >= 2.0, `${template}/${zone}/${seed} t=${(f / 30).toFixed(1)} : ${ids[i]} et ${ids[j]} à ${d.toFixed(2)}`);
+            }
+          }
+        }
+      }
+    }
+  }
+});

@@ -72,6 +72,9 @@ jobs:
       - name: Audio d'un épisode (voix + lip-sync + musique + mixage, vérifié)
         run: npm run audio -- --seed 42
 
+      - name: Audit de prononciation (toutes les répliques, toutes les voix)
+        run: npm run check:pronunciation
+
       - name: Build
         run: npm run build
 

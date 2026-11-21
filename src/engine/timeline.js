@@ -6,7 +6,7 @@
 //   start: [x, z],          position initiale (monde)
 //   heading: 0,             orientation initiale (radians, 0 = regarde vers +z / la caméra)
 //   actions: [
-//     { type: 'walk', start: 0, end: 3, to: [x, z] },          déplacement (walk | run)
+//     { type: 'walk', start: 0, end: 3, to: [x, z], via?: [[x, z]] }  déplacement (walk | run), via = points de passage
 //     { type: 'jump', start: 3, end: 4, to: [x, z]? },          saut (sur place ou en avançant)
 //     { type: 'talk', start: 4, end: 6, face: [x, z] | angle }, action sur place
 //     { type: 'place', start: 8, to: [x, z], heading: 0 },        téléportation (changement de décor)
@@ -46,6 +46,32 @@ function faceAngle(face, pos, fallback) {
   return Math.atan2(dx, dz);
 }
 
+/** Points du trajet : départ → points de passage (via) → arrivée. */
+function pathPoints(startPos, a) {
+  return [startPos, ...(a.via || []), a.to];
+}
+
+export function pathLength(pts) {
+  let L = 0;
+  for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+  return L;
+}
+
+/** Position à la distance `d` le long d'un trajet. */
+export function pointAt(pts, d) {
+  let rest = Math.max(0, d);
+  for (let i = 1; i < pts.length; i++) {
+    const [ax, az] = pts[i - 1], [bx, bz] = pts[i];
+    const seg = Math.hypot(bx - ax, bz - az);
+    if (rest <= seg || i === pts.length - 1) {
+      const k = seg > 0 ? Math.min(1, rest / seg) : 1;
+      return [ax + (bx - ax) * k, az + (bz - az) * k];
+    }
+    rest -= seg;
+  }
+  return [...pts[pts.length - 1]];
+}
+
 function isMoving(a) {
   return MOVE_TYPES.has(a.type) || (a.type === 'jump' && a.to);
 }
@@ -71,8 +97,10 @@ export function evaluateTrack(track, t, seed = 0) {
     const startPos = [...pos];
     const startHeading = heading;
     const moving = isMoving(a);
+    const pts = moving ? pathPoints(startPos, a) : null;
+    // en fin de trajet, le personnage regarde dans la direction du dernier segment
     const target = moving
-      ? faceAngle(a.to, startPos, heading)
+      ? faceAngle(a.to, pts[pts.length - 2], heading)
       : faceAngle(a.face, startPos, heading);
     if (t >= a.end) {
       if (moving) pos = [...a.to];
@@ -80,7 +108,7 @@ export function evaluateTrack(track, t, seed = 0) {
       last = { a, startPos };
       continue;
     }
-    current = { a, startPos, startHeading, target, moving };
+    current = { a, startPos, startHeading, target, moving, pts };
     break;
   }
 
@@ -88,16 +116,16 @@ export function evaluateTrack(track, t, seed = 0) {
   let type, ctx, x, z, h, expression = null;
 
   if (current) {
-    const { a, startPos, startHeading, target, moving } = current;
+    const { a, startPos, startHeading, target, moving, pts } = current;
     const u = t - a.start;
     const dur = a.end - a.start;
     type = a.type;
     ctx = { ...ctxBase, u, dur, amp: 1, phase: 0 };
     x = startPos[0];
     z = startPos[1];
+    let pathHeading = null;
     if (moving) {
-      const dx = a.to[0] - startPos[0], dz = a.to[1] - startPos[1];
-      const d = Math.hypot(dx, dz);
+      const d = pathLength(pts);
       let dist, amp = 1;
       if (MOVE_TYPES.has(a.type)) {
         const tr = travel(d, dur, u);
@@ -108,9 +136,14 @@ export function evaluateTrack(track, t, seed = 0) {
         dist = d * smooth(Math.min(1, u / dur));
       }
       ctx.amp = amp;
-      if (d > 0) { x += (dx / d) * dist; z += (dz / d) * dist; }
+      [x, z] = pointAt(pts, dist);
+      // orientation : vers un point un peu plus loin sur le trajet (virages en douceur)
+      const ahead = pointAt(pts, Math.min(d, dist + 1.2));
+      if (Math.hypot(ahead[0] - x, ahead[1] - z) > 0.05) pathHeading = Math.atan2(ahead[0] - x, ahead[1] - z);
+      else pathHeading = target;
     }
-    h = angleLerp(startHeading, target, smooth(Math.min(1, u / TURN)));
+    const goal = pathHeading ?? target;
+    h = angleLerp(startHeading, goal, smooth(Math.min(1, u / TURN)));
     expression = a.expression ?? null;
   } else {
     type = 'idle';
@@ -136,7 +169,7 @@ export function evaluateTrack(track, t, seed = 0) {
   if (since < BLEND && prevType && prevType !== type) {
     const prevCtx = { ...ctxBase, u: t - (last?.a.start ?? 0), dur: last ? last.a.end - last.a.start : Infinity, amp: 1, phase: 0 };
     if (last && prevType === last.a.type && MOVE_TYPES.has(prevType)) {
-      const d = Math.hypot(last.a.to[0] - last.startPos[0], last.a.to[1] - last.startPos[1]);
+      const d = pathLength(pathPoints(last.startPos, last.a));
       prevCtx.phase = (d / STRIDE[prevType]) * Math.PI * 2;
       prevCtx.amp = 0.25;
     }

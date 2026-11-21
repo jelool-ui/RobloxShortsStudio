@@ -103,6 +103,21 @@ test('timeline : déterminisme', () => {
   assert.deepEqual(evaluateTrack(track, 2.345, 3), evaluateTrack(track, 2.345, 3));
 });
 
+test('timeline : trajet avec points de passage (via), continu et orienté', () => {
+  const tr = { start: [0, 0], heading: 0, actions: [{ type: 'walk', start: 0, end: 4, to: [10, 0], via: [[5, 3]] }] };
+  let prev = evaluateTrack(tr, 0), maxZ = 0;
+  for (let f = 1; f <= 120; f++) {
+    const s = evaluateTrack(tr, f / 30);
+    assert.ok(Math.hypot(s.x - prev.x, s.z - prev.z) < 0.5, `continu à l'image ${f}`);
+    maxZ = Math.max(maxZ, s.z);
+    prev = s;
+  }
+  assert.ok(maxZ > 2.5, 'passe bien par le point de passage');
+  const end = evaluateTrack(tr, 5);
+  assert.deepEqual([end.x, end.z], [10, 0]);
+  assert.ok(Math.abs(evaluateTrack(tr, 0.6).heading - Math.atan2(5, 3)) < 0.5, 'regarde vers le premier point de passage');
+});
+
 test('moveDuration : la course est plus rapide que la marche', () => {
   assert.ok(moveDuration('run', [0, 0], [20, 0]) < moveDuration('walk', [0, 0], [20, 0]));
 });

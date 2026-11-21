@@ -24,7 +24,7 @@ const PRESETS = {
 const smooth = (x) => x * x * (3 - 2 * x);
 
 const SINGLE = new Set(['medium', 'closeup', 'track', 'low', 'over']);
-const ANGLE_TRIES = [0, 0.5, -0.5, 0.9, -0.9, 1.3, -1.3];
+const ANGLE_TRIES = [0, 0.5, -0.5, 0.9, -0.9, 1.3, -1.3, 1.7, -1.7];
 
 /** Un autre personnage se trouve-t-il entre la caméra et le sujet ? (plan horizontal) */
 export function isOccluded(cam, subj, others, radius = 2.6) {
@@ -42,7 +42,7 @@ export function isOccluded(cam, subj, others, radius = 2.6) {
 
 const angleCache = new Map();
 /** Choisit, une fois par plan, un angle sans obstacle au début, au milieu et à la fin du plan. */
-function clearAngle(shot, getChar, allIds, dist) {
+function clearAngle(shot, getChar, allIds, dist, props = []) {
   if (!SINGLE.has(shot.type) || !allIds?.length || !shot.target) return shot.angle ?? 0;
   const key = shot;
   if (angleCache.has(key)) return angleCache.get(key);
@@ -61,16 +61,19 @@ function clearAngle(shot, getChar, allIds, dist) {
     const ok = times.every((tt) => {
       const sc = getChar(shot.target, tt);
       if (!sc) return true;
-      if (sc.heading != null && shot.type !== 'track') {
+      if (sc.heading != null) {
         const d = Math.abs(((a - sc.heading + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI);
-        if (d > 1.25) return false; // jamais de dos
+        if (d > (shot.type === 'track' ? 1.6 : 1.25)) return false; // jamais de dos (travelling : de côté au pire)
       }
       const cam = [sc.x + Math.sin(a) * dist, sc.z + Math.cos(a) * dist];
       const others = allIds.filter((id) => id !== shot.target).map((id) => getChar(id, tt)).filter(Boolean).map((c) => [c.x, c.z]);
-      return !isOccluded(cam, [sc.x, sc.z], others);
+      if (isOccluded(cam, [sc.x, sc.z], others)) return false;
+      // objets du décor assez hauts pour masquer le sujet (banc, arbres, poteau…)
+      return !props.some(([px, pz, r, h]) => h >= 3 && isOccluded(cam, [sc.x, sc.z], [[px, pz]], r + 0.6));
     });
     if (!ok) continue;
-    const score = (shot.type === 'track' ? 0 : Math.abs(diff - 0.35)) + Math.abs(da) * 0.3;
+    // plans fixes : 3/4 face ; travelling : de côté / 3/4 avant (on voit le mouvement ET le visage)
+    const score = Math.abs(diff - (shot.type === 'track' ? 0.9 : 0.35)) + Math.abs(da) * 0.3;
     if (score < bestScore) { bestScore = score; chosen = a; }
   }
   if (chosen == null) chosen = fallback;
@@ -91,9 +94,10 @@ export function shotAt(shots, t) {
  * @param getChar(id, time?) → { x, z, scale, headY } position monde d'un personnage (au temps donné)
  * @param punches temps des zooms d'impact
  * @param allIds tous les personnages (pour éviter qu'un autre masque le sujet)
+ * @param props  objets fixes du décor [x, z, rayon, hauteur]
  * @returns {{ target: THREE.Vector3, shot }}
  */
-export function updateCamera(camera, shots, t, getChar, punches = [], allIds = []) {
+export function updateCamera(camera, shots, t, getChar, punches = [], allIds = [], props = []) {
   const shot = shotAt(shots, t);
   const p = PRESETS[shot.type] ?? PRESETS.medium;
   const ids = Array.isArray(shot.target) ? shot.target : shot.target ? [shot.target] : [];
@@ -122,7 +126,7 @@ export function updateCamera(camera, shots, t, getChar, punches = [], allIds = [
   const dolly = shot.dolly ?? 0.12;
   dist *= 1 - dolly * k;
 
-  const angle = clearAngle(shot, getChar, allIds, dist) + (shot.orbit ?? 0) * k;
+  const angle = clearAngle(shot, getChar, allIds, dist, props) + (shot.orbit ?? 0) * k;
   const seed = Math.floor(shot.start * 10);
   const shakeA = 0.05;
   const sx = Math.sin(t * 1.7 + hash01(seed) * 6) * shakeA + Math.sin(t * 3.1) * shakeA * 0.4;

@@ -7,6 +7,7 @@ import { applyPose } from './animation.js';
 import { evaluateTrack } from './timeline.js';
 import { updateCamera } from './cameraRig.js';
 import { blinkAt, seedOf } from './idle.js';
+import { ALL_PROPS } from './sets/marks.js';
 
 export function createDirector(stage, sequence, { school } = {}) {
   const cast = {};
@@ -56,7 +57,7 @@ export function createDirector(stage, sequence, { school } = {}) {
       e.c.setMouth(m);
       e.c.setBlink(st.expression === 'surprised' || st.expression === 'scared' ? 0 : blinkAt(t, e.seed));
     }
-    const { target } = updateCamera(stage.camera, sequence.shots, t, getChar, sequence.punches ?? [], ids);
+    const { target } = updateCamera(stage.camera, sequence.shots, t, getChar, sequence.punches ?? [], ids, ALL_PROPS);
     stage.focus(target.x, target.z);
     if (school) school.showNear(target.x, target.z);
   }

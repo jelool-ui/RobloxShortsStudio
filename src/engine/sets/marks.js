@@ -19,6 +19,8 @@ export const ZONE_DATA = {
       lockerL: [-5.5, -5], lockerR: [5.5, -5], doorL: [-10, -5.5], doorR: [10, -5.5],
       spotL: [-15, -1], spotR: [15, -1],
     },
+    // objets du décor qui peuvent masquer un personnage : [x, z, rayon, hauteur]
+    props: [[-22.5, -4, 1, 1.8], [22.5, -5.5, 1.2, 2.6]],
   },
   classroom: {
     label: 'Salle de classe',
@@ -30,6 +32,7 @@ export const ZONE_DATA = {
       teacherDesk: [-10, oz - 3.5], door: [14.5, oz - 3],
       aisleLeft: [-4, oz + 7], aisleRight: [4, oz + 7],
     },
+    props: [[-10, oz - 6.5, 2.8, 2.9]],
   },
   yard: {
     label: 'Cour de récréation',
@@ -41,6 +44,7 @@ export const ZONE_DATA = {
       door: [ox, -19], hopscotch: [ox - 9, 4],
       spotL: [ox - 12, 1], spotR: [ox + 12, 1],
     },
+    props: [[ox + 13, 6.3, 3.3, 3.8], [ox - 22, -10, 3, 11], [ox + 24, -12, 2.7, 10], [ox - 30, 4, 2.4, 9], [ox + 16, -8.8, 1.2, 11]],
   },
 };
 
@@ -63,3 +67,6 @@ export function resolveMark(zone, name) {
   if (fb && marks[fb]) return [...marks[fb]];
   throw new Error(`Marque inconnue « ${name} » dans la zone ${zone}`);
 }
+
+/** Tous les obstacles fixes des décors (coordonnées monde). */
+export const ALL_PROPS = Object.values(ZONE_DATA).flatMap((z) => z.props || []);

@@ -53,6 +53,9 @@ test('texte prononçable : emoji, apostrophes, majuscules accentuées', () => {
   assert.equal(speakable('Ce n’est pas INTERRO… c’est INTER-RÉCRÉ ! 📝'), "Ce n'est pas interro... c'est inter-récré !");
   assert.equal(speakable('Une ABEILLE !'), 'Une abeille !');
   assert.equal(speakable('Zoé et Max'), 'Zoé et Max', 'les prénoms restent intacts');
+  assert.equal(speakable('À ton tour ! Vas-y !'), 'À ton tour ! Vas-i !', '« vas-y » non épelé');
+  assert.equal(speakable('Allez-y.'), 'Allez-i.');
+  assert.equal(speakable('Il y a un fantôme'), 'Il y a un fantôme', '« il y a » intact');
 });
 
 test('bruitages : tous générés, non vides, sans saturation, déterministes', () => {

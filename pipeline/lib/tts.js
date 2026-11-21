@@ -18,6 +18,8 @@ export function speakable(text) {
     .replace(/…/g, '...')
     .replace(/[«»]/g, '"')
     .replace(/(?<!\p{L})\p{Lu}[\p{Lu}-]{2,}(?!\p{L})/gu, (w) => w.toLowerCase())
+    // « Vas-y ! », « Allez-y. » : sinon le « y » final est lu comme la lettre (« i grec »)
+    .replace(/-y(?=\s*(?:[!?.,…;:]|$))/giu, '-i')
     .replace(/\s+/g, ' ')
     .trim();
 }

@@ -5,7 +5,7 @@
 // La durée de chaque réplique vient de la voix réelle (phase 6, `lineDurations`) ou, à défaut,
 // d'une estimation. Le minutage s'adapte ensuite pour tomber pile sur la durée cible.
 import { resolveMark } from '../engine/sets/marks.js';
-import { moveDuration } from '../engine/timeline.js';
+import { pathLength } from '../engine/timeline.js';
 
 export const TARGET_DURATION = 45;
 const OUTRO_MIN = 2.2;
@@ -27,6 +27,43 @@ export function estimateLineDuration(text) {
 
 const dist2 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const CHEAT = 0.4; // part de l'orientation « tournée vers le public » (règle du théâtre)
+const PERSONAL_SPACE = 2.6; // distance minimale entre deux personnages (bras écartés compris)
+const SPEED = { walk: 4, run: 9 };
+
+/**
+ * Points de passage pour aller de `from` à `to` sans traverser les autres personnages.
+ * Pour chaque obstacle trop proche du trajet, on ajoute un point qui le contourne
+ * (du côté où passe déjà le trajet, sinon côté caméra).
+ */
+export function detour(from, to, obstacles, depth = 0) {
+  const vx = to[0] - from[0], vz = to[1] - from[1];
+  const L2 = vx * vx + vz * vz;
+  if (L2 < 1e-6 || depth > 3) return [];
+  let hit = null;
+  for (const o of obstacles) {
+    const s = ((o[0] - from[0]) * vx + (o[1] - from[1]) * vz) / L2;
+    if (s <= 0 || s >= 1) continue;
+    const px = from[0] + vx * s, pz = from[1] + vz * s;
+    const d = Math.hypot(o[0] - px, o[1] - pz);
+    if (d < PERSONAL_SPACE && (!hit || s < hit.s)) hit = { o, s, px, pz, d };
+  }
+  if (!hit) return [];
+  let nx = hit.px - hit.o[0], nz = hit.pz - hit.o[1];
+  const n = Math.hypot(nx, nz);
+  if (Math.abs(vx) > Math.abs(vz)) {
+    // déplacement latéral : on passe toujours devant (côté caméra) pour ne pas être caché
+    const L = Math.sqrt(L2);
+    nx = -vz / L; nz = vx / L;
+    if (nz < 0) { nx = -nx; nz = -nz; }
+  } else if (n < 0.3) {
+    const L = Math.sqrt(L2);
+    nx = -vz / L; nz = vx / L;
+    if (nz < 0) { nx = -nx; nz = -nz; } // passe devant (côté caméra)
+  } else { nx /= n; nz /= n; }
+  const w = [r3(hit.o[0] + nx * (PERSONAL_SPACE + 0.5)), r3(hit.o[1] + nz * (PERSONAL_SPACE + 0.5))];
+  const rest = obstacles.filter((o) => o !== hit.o);
+  return [...detour(from, w, rest, depth + 1), w, ...detour(w, to, rest, depth + 1)];
+}
 
 /** Angle pour regarder `target` depuis `from`, légèrement ouvert vers la caméra (côté +z). */
 export function cheatFace(from, target) {
@@ -58,7 +95,7 @@ function layout(story, steps, durOf, gap) {
   const freeSpot = (role, p) => {
     let q = [...p];
     for (let i = 0; i < 4; i++) {
-      const clash = roles.some((r) => r !== role && pos[r] && dist2(pos[r], q) < 2.2);
+      const clash = roles.some((r) => r !== role && pos[r] && dist2(pos[r], q) < PERSONAL_SPACE);
       if (!clash) break;
       q = [q[0] + (i % 2 === 0 ? 3 : -6), q[1] + 0.5];
     }
@@ -98,11 +135,15 @@ function layout(story, steps, durOf, gap) {
     // --- Déplacements
     let moveEnd = 0;
     const moveEndOf = {};
+    const before = { ...pos };
     for (const [r, [type, mark]] of Object.entries(st.mv || {})) {
       const from = pos[r];
       const to = freeSpot(r, resolveMark(zone, mark));
-      const d = moveDuration(type, from, to);
-      addAction(r, { type, start: r3(stepStart), end: r3(stepStart + d), to });
+      // obstacles : les autres, là où ils sont (et là où ils vont s'ils bougent aussi)
+      const obstacles = roles.filter((o) => o !== r).flatMap((o) => [before[o], pos[o]]).filter(Boolean);
+      const via = detour(from, to, obstacles);
+      const d = Math.max(0.6, pathLength([from, ...via, to]) / SPEED[type] + 0.25);
+      addAction(r, { type, start: r3(stepStart), end: r3(stepStart + d), to, ...(via.length ? { via } : {}) });
       pos[r] = to;
       moveEnd = Math.max(moveEnd, d);
       moveEndOf[r] = stepStart + d;
