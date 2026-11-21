@@ -108,18 +108,7 @@ jobs:
         if: always()
         run: |
           M=$(ls -t output/episodes/*/manifest.json 2>/dev/null | head -1 || true)
-          if [ -z "$M" ]; then echo "::error::Aucun manifest : la génération n'a pas démarré"; exit 1; fi
-          node -e '
-            const m = require(process.argv[1]);
-            const lines = [`## ${m.status === "success" ? "✅" : "❌"} ${m.title ?? "Épisode"}`, "",
-              `- Identifiant : \`${m.id}\` · graine ${m.seed} · histoire ${m.template} · décor ${m.zone}`,
-              `- Durée totale : ${m.seconds} s`];
-            for (const [k, s] of Object.entries(m.steps)) lines.push(`- Étape ${k} : ${s.status}${s.seconds ? ` (${s.seconds} s)` : ""}${s.error ? ` — ${s.error}` : ""}`);
-            if (m.video) lines.push(`- Vidéo : ${m.video.width ?? 1080}×${m.video.height ?? 1920}, ${m.video.duration?.toFixed?.(2)} s, ${m.video.frames} images, ${m.video.sizeMB} Mo`);
-            require("fs").appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join("\n") + "\n");
-            if (m.status !== "success") { for (const e of m.errors) console.log(`::error::${e.replace(/\n/g, " ")}`); process.exit(1); }
-          ' "$M"
-          test -s "$(dirname "$M")/episode.mp4" || { echo "::error::episode.mp4 absent"; exit 1; }
+          node pipeline/ci-summary.js "$M"
 
       - name: Publier l'artefact (MP4 téléchargeable)
         if: success()
@@ -143,7 +132,7 @@ jobs:
           REQ: ${{ inputs.request_id }}
         run: |
           TAG="${ID}-r${GITHUB_RUN_NUMBER}"
-          TITLE=$(node -e 'console.log(require(process.argv[1]).title)' "$DIR/manifest.json")
+          TITLE=$(node pipeline/ci-summary.js "$DIR/manifest.json" --title)
           { cat "$DIR/youtube.txt"; echo; echo "---"; echo "request_id: ${REQ}"; echo "run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"; } > notes.md
           gh release create "$TAG" --title "$TITLE" --notes-file notes.md --target "$GITHUB_SHA" \
             "$DIR/episode.mp4" "$DIR/thumbnail.jpg" "$DIR/youtube.txt" "$DIR/manifest.json"
