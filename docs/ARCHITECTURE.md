@@ -66,9 +66,9 @@ RobloxShortsStudio/
 
 | Personnage | Modèle Piper | Licence | Remarque |
 |---|---|---|---|
-| A | `fr_FR-siwis-medium` | CC-BY 4.0 | voix féminine — attribution requise |
-| B | `fr_FR-upmc-medium` (locuteur `pierre`) | CC-BY-SA 4.0 | voix masculine — attribution requise |
-| C | `fr_FR-gilles-low` | CC0 | voix masculine, timbre différent |
+| Zoé | `fr_FR-siwis-medium` | CC-BY 4.0 | voix féminine, +2,5 demi-tons (~280 Hz) — attribution requise |
+| Max | `fr_FR-upmc-medium` (locuteur `pierre`) | CC-BY-SA 4.0 | voix grave (~125 Hz) — attribution requise |
+| Nino | `fr_FR-gilles-low` | CC0 | +7 demi-tons, voix vive (~160 Hz) |
 
 Écarté : `fr_FR-tom-medium` (AGPLv3, contraignant).
 Les attributions seront ajoutées automatiquement dans la description générée de chaque épisode.

@@ -60,8 +60,17 @@ jobs:
         run: |
           echo "CPU : $(nproc)"; free -h; df -h . | tail -1
 
+      - name: Cache des voix Piper (~200 Mo)
+        uses: actions/cache@v4
+        with:
+          path: assets/voices
+          key: piper-voices-v1-${{ hashFiles('pipeline/lib/voices.js') }}
+
       - name: Tests
         run: npm test
+
+      - name: Audio d'un épisode (voix + lip-sync + musique + mixage, vérifié)
+        run: npm run audio -- --seed 42
 
       - name: Build
         run: npm run build

@@ -1,11 +1,12 @@
 // Distribution originale de RobloxShortsStudio.
-// Chaque personnage a une voix Piper attitrée (phase 6) — voir docs/ARCHITECTURE.md §4.
+// Chaque personnage a une voix Piper attitrée — voir docs/ARCHITECTURE.md §4.
+// lengthScale < 1 = parle plus vite ; pitch = décalage de hauteur en demi-tons (voix plus jeune).
 export const CHARACTERS = {
   nino: {
     id: 'nino',
     name: 'Nino',
     personality: 'farceur, énergique, toujours une idée folle',
-    voice: { model: 'fr_FR-gilles-low', speaker: null },
+    voice: { model: 'fr_FR-gilles-low', speaker: null, lengthScale: 0.92, pitch: 7, noiseScale: 0.7 },
     colors: {
       skin: 0xf2c39a,
       shirt: 0x2f6fdb,
@@ -20,7 +21,7 @@ export const CHARACTERS = {
     id: 'zoe',
     name: 'Zoé',
     personality: 'maline, curieuse, première de la classe',
-    voice: { model: 'fr_FR-siwis-medium', speaker: null },
+    voice: { model: 'fr_FR-siwis-medium', speaker: null, lengthScale: 0.95, pitch: 2.5, noiseScale: 0.667 },
     colors: {
       skin: 0x9c6a48,
       shirt: 0x2fb36d,
@@ -37,7 +38,7 @@ export const CHARACTERS = {
     id: 'max',
     name: 'Max',
     personality: 'grand, calme, peureux en secret',
-    voice: { model: 'fr_FR-upmc-medium', speaker: 'pierre' },
+    voice: { model: 'fr_FR-upmc-medium', speaker: 'pierre', lengthScale: 1.02, pitch: 0, noiseScale: 0.6 },
     scale: 1.1,
     colors: {
       skin: 0xffd9b8,

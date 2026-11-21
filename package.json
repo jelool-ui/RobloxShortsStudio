@@ -12,6 +12,7 @@
     "smoke": "node pipeline/smoke-render.js",
     "portraits": "node pipeline/portraits.js",
     "story": "node pipeline/story.js",
+    "audio": "node pipeline/audio.js",
     "test": "node --test tests/*.test.js"
   },
   "dependencies": {
