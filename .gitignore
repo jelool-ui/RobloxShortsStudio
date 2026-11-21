@@ -4,6 +4,8 @@ output/
 .venv/
 venv/
 assets/voices/*.onnx
+assets/voices/*.onnx.json
+assets/voices/*.part
 *.log
 .env
 .env.*

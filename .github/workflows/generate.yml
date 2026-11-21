@@ -1,0 +1,161 @@
+# Génère un épisode complet (45 s, vertical) sans aucune intervention, puis publie :
+#   - le MP4 + miniature + texte YouTube comme ARTEFACT téléchargeable (onglet Actions),
+#   - une RELEASE GitHub (lue par le tableau de bord mobile : bibliothèque, aperçu, export).
+# Déclenchement : bouton « Run workflow » (application GitHub / navigateur) ou tableau de bord.
+name: Générer un épisode
+run-name: "🎬 ${{ inputs.template }} · ${{ inputs.zone }} · ${{ inputs.request_id || github.run_number }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      zone:
+        description: Décor
+        type: choice
+        default: auto
+        options: [auto, hallway, classroom, yard]
+      template:
+        description: Histoire
+        type: choice
+        default: auto
+        options: [auto, devoir-oublie, casier-fantome, concours-saut, rumeur-pizza, sac-magique, interro-surprise]
+      cast:
+        description: "Distribution (farceur, maline, peureux)"
+        type: choice
+        default: nino,zoe,max
+        options:
+          - "nino,zoe,max"
+          - "nino,max,zoe"
+          - "zoe,nino,max"
+          - "zoe,max,nino"
+          - "max,nino,zoe"
+          - "max,zoe,nino"
+      quality:
+        description: "Qualité (fast = ~10 min, high = ~25 min)"
+        type: choice
+        default: fast
+        options: [fast, high]
+      seed:
+        description: "Graine (vide = aléatoire ; même graine = même épisode)"
+        type: string
+        default: ""
+      request_id:
+        description: "Identifiant de demande (rempli par le tableau de bord)"
+        type: string
+        default: ""
+
+permissions:
+  contents: write # création de la release de l'épisode
+
+concurrency:
+  group: generate-${{ github.run_id }}
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Installer FFmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: Installer les dépendances
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          pip install -r requirements.txt
+
+      - name: Cache des voix Piper
+        uses: actions/cache@v4
+        with:
+          path: assets/voices
+          key: piper-voices-v1-${{ hashFiles('pipeline/lib/voices.js') }}
+
+      - name: Vérifier l'environnement
+        run: bash scripts/check-env.sh
+
+      - name: Générer l'épisode
+        id: gen
+        env:
+          IN_ZONE: ${{ inputs.zone }}
+          IN_TEMPLATE: ${{ inputs.template }}
+          IN_CAST: ${{ inputs.cast }}
+          IN_QUALITY: ${{ inputs.quality }}
+          IN_SEED: ${{ inputs.seed }}
+        run: |
+          set -o pipefail
+          # Validation des entrées (aucune valeur libre n'est passée telle quelle au shell)
+          [[ "$IN_SEED" =~ ^[0-9]{0,9}$ ]] || { echo "::error::Graine invalide (chiffres uniquement)"; exit 1; }
+          SEED="${IN_SEED:-$(( (RANDOM << 15 | RANDOM) % 1000000000 ))}"
+          ARGS=(--seed "$SEED" --zone "$IN_ZONE" --cast "$IN_CAST" --quality "$IN_QUALITY")
+          [[ "$IN_TEMPLATE" != "auto" ]] && ARGS+=(--template "$IN_TEMPLATE")
+          node pipeline/generate.js "${ARGS[@]}" 2>&1 | tee generate.log
+          DIR=$(dirname "$(ls -t output/episodes/*/manifest.json | head -1)")
+          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
+          echo "id=$(basename "$DIR")" >> "$GITHUB_OUTPUT"
+
+      - name: Résumé et contrôle du résultat
+        if: always()
+        run: |
+          M=$(ls -t output/episodes/*/manifest.json 2>/dev/null | head -1 || true)
+          if [ -z "$M" ]; then echo "::error::Aucun manifest : la génération n'a pas démarré"; exit 1; fi
+          node -e '
+            const m = require(process.argv[1]);
+            const lines = [`## ${m.status === "success" ? "✅" : "❌"} ${m.title ?? "Épisode"}`, "",
+              `- Identifiant : \`${m.id}\` · graine ${m.seed} · histoire ${m.template} · décor ${m.zone}`,
+              `- Durée totale : ${m.seconds} s`];
+            for (const [k, s] of Object.entries(m.steps)) lines.push(`- Étape ${k} : ${s.status}${s.seconds ? ` (${s.seconds} s)` : ""}${s.error ? ` — ${s.error}` : ""}`);
+            if (m.video) lines.push(`- Vidéo : ${m.video.width ?? 1080}×${m.video.height ?? 1920}, ${m.video.duration?.toFixed?.(2)} s, ${m.video.frames} images, ${m.video.sizeMB} Mo`);
+            require("fs").appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join("\n") + "\n");
+            if (m.status !== "success") { for (const e of m.errors) console.log(`::error::${e.replace(/\n/g, " ")}`); process.exit(1); }
+          ' "$M"
+          test -s "$(dirname "$M")/episode.mp4" || { echo "::error::episode.mp4 absent"; exit 1; }
+
+      - name: Publier l'artefact (MP4 téléchargeable)
+        if: success()
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ steps.gen.outputs.id }}
+          path: |
+            ${{ steps.gen.outputs.dir }}/episode.mp4
+            ${{ steps.gen.outputs.dir }}/thumbnail.jpg
+            ${{ steps.gen.outputs.dir }}/youtube.txt
+            ${{ steps.gen.outputs.dir }}/manifest.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publier la release (bibliothèque du tableau de bord)
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DIR: ${{ steps.gen.outputs.dir }}
+          ID: ${{ steps.gen.outputs.id }}
+          REQ: ${{ inputs.request_id }}
+        run: |
+          TAG="${ID}-r${GITHUB_RUN_NUMBER}"
+          TITLE=$(node -e 'console.log(require(process.argv[1]).title)' "$DIR/manifest.json")
+          { cat "$DIR/youtube.txt"; echo; echo "---"; echo "request_id: ${REQ}"; echo "run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"; } > notes.md
+          gh release create "$TAG" --title "$TITLE" --notes-file notes.md --target "$GITHUB_SHA" \
+            "$DIR/episode.mp4" "$DIR/thumbnail.jpg" "$DIR/youtube.txt" "$DIR/manifest.json"
+          echo "Release : ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${TAG}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Journal en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: echec-${{ github.run_number }}
+          path: |
+            generate.log
+            output/episodes/*/manifest.json
+          if-no-files-found: ignore
+          retention-days: 7

@@ -1,0 +1,42 @@
+# Publie le tableau de bord mobile sur GitHub Pages (https://<compte>.github.io/<dépôt>/).
+# Prérequis (une fois) : dépôt public + Settings → Pages → Source : « GitHub Actions ».
+name: Publier le tableau de bord
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['src/ui/**', 'src/story/templates.js', 'src/engine/characters.js', 'src/engine/sets/marks.js', 'index.html', 'vite.config.js', 'package.json', 'package-lock.json', '.github/workflows/pages.yml']
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    # GitHub Pages n'est pas disponible pour un dépôt privé sur l'offre gratuite
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - id: deploy
+        uses: actions/deploy-pages@v4

@@ -7,7 +7,7 @@ name: CI - contrôle de la chaîne
 on:
   workflow_dispatch:
   push:
-    branches: ['ccr-**']
+    branches: ['main', 'ccr-**']
     paths:
       - 'src/**'
       - 'pipeline/**'
