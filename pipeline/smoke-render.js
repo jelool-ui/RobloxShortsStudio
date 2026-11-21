@@ -1,9 +1,9 @@
 // Test de bout en bout de la chaîne technique (phase 2) :
 // build → Playwright rend N images → FFmpeg (vidéo + bip audio) → vérification ffprobe.
-// Usage : npm run build && npm run smoke  [-- --seconds 3 --scene demo|showcase|test]
+// Usage : npm run build && npm run smoke  [-- --seconds 3 --scene demo|showcase|test | --episode storyboard.json]
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, rmSync, existsSync } from 'node:fs';
+import { mkdirSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { startPreview } from './lib/server.js';
 import { verifyMp4 } from './lib/verify.js';
@@ -11,7 +11,8 @@ import { verifyMp4 } from './lib/verify.js';
 const args = process.argv.slice(2);
 const arg = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d);
 const seconds = Number(arg('--seconds', 2));
-const sceneName = arg('--scene', 'demo');
+const episodeFile = arg('--episode', null); // storyboard.json → rend l'épisode
+const sceneName = episodeFile ? 'episode' : arg('--scene', 'demo');
 const W = 1080, H = 1920, FPS = 30, N = seconds * FPS;
 const outDir = 'output/smoke';
 const framesDir = join(outDir, 'frames');
@@ -32,6 +33,7 @@ try {
   page.on('pageerror', (e) => console.error('Erreur page :', e.message));
   await page.goto(`${server.url}render.html?scene=${sceneName}&w=${W}&h=${H}&fps=${FPS}&frames=${N}`);
   await page.waitForFunction('window.__RSS_READY === true', null, { timeout: 30000 });
+  if (episodeFile) await page.evaluate((sb) => window.loadEpisode(sb), JSON.parse(readFileSync(episodeFile, 'utf8')));
 
   const t0 = Date.now();
   for (let f = 0; f < N; f++) {

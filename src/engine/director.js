@@ -27,6 +27,23 @@ export function createDirector(stage, sequence, { school } = {}) {
   }
   const ids = Object.keys(cast);
 
+  // Bouche pendant les répliques : courbe d'amplitude réelle de la voix si fournie (phase 6,
+  // d.curve échantillonnée à d.fps), sinon mouvement synthétique de syllabes.
+  const lines = sequence.dialogue || [];
+  function dialogueMouth(id, t) {
+    for (const d of lines) {
+      if (d.charId !== id || t < d.start || t > d.end) continue;
+      const u = t - d.start;
+      if (d.curve && d.fps) {
+        const i = Math.min(d.curve.length - 1, Math.floor(u * d.fps));
+        return d.curve[i] ?? 0;
+      }
+      const env = Math.min(1, u / 0.08, (d.end - t) / 0.08);
+      return env * Math.max(0, 0.5 + 0.5 * Math.sin(u * 15.7) * Math.sin(u * 6.1 + 1));
+    }
+    return 0;
+  }
+
   function update(t) {
     for (const [id, e] of Object.entries(cast)) {
       const st = evaluateTrack(sequence.tracks[id], t, e.seed);
@@ -35,7 +52,7 @@ export function createDirector(stage, sequence, { school } = {}) {
       e.c.root.rotation.y = st.heading;
       applyPose(e.c, st.pose);
       e.c.setExpression(st.expression ?? sequence.expression?.(id, t) ?? 'neutral');
-      const m = sequence.mouth ? sequence.mouth(id, t) : 0;
+      const m = sequence.mouth ? sequence.mouth(id, t) : dialogueMouth(id, t);
       e.c.setMouth(m);
       e.c.setBlink(st.expression === 'surprised' || st.expression === 'scared' ? 0 : blinkAt(t, e.seed));
     }

@@ -32,6 +32,7 @@ export function isOccluded(cam, subj, others, radius = 2.6) {
   const len2 = vx * vx + vz * vz;
   if (len2 < 1e-6) return false;
   return others.some(([ox, oz]) => {
+    if (Math.hypot(ox - cam[0], oz - cam[1]) < radius) return true; // caméra « dans » un personnage
     const s = ((ox - cam[0]) * vx + (oz - cam[1]) * vz) / len2;
     if (s <= 0.02 || s >= 0.92) return false;
     const px = cam[0] + vx * s, pz = cam[1] + vz * s;
@@ -47,23 +48,32 @@ function clearAngle(shot, getChar, allIds, dist) {
   if (angleCache.has(key)) return angleCache.get(key);
   const base = shot.angle ?? 0;
   const times = [shot.start + 0.01, (shot.start + shot.end) / 2, shot.end - 0.01];
-  let chosen = base;
+  // Parmi les angles sans obstacle, on garde celui qui montre le mieux le visage (3/4 face),
+  // en restant proche de l'angle demandé. Sinon : le moins mauvais (visage avant tout).
+  const mid = getChar(shot.target, (shot.start + shot.end) / 2);
+  const facing = (a) => (mid?.heading == null ? 0
+    : Math.abs(((a - mid.heading + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI));
+  let chosen = null, bestScore = Infinity, fallback = base, fallbackDiff = Infinity;
   for (const da of ANGLE_TRIES) {
     const a = base + da;
+    const diff = facing(a);
+    if (diff < fallbackDiff) { fallbackDiff = diff; fallback = a; }
     const ok = times.every((tt) => {
       const sc = getChar(shot.target, tt);
       if (!sc) return true;
-      // ne jamais filmer le sujet de dos (écart max ~70° avec la direction de son regard)
       if (sc.heading != null && shot.type !== 'track') {
-        const diff = Math.abs(((a - sc.heading + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI);
-        if (diff > 1.25) return false;
+        const d = Math.abs(((a - sc.heading + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI);
+        if (d > 1.25) return false; // jamais de dos
       }
       const cam = [sc.x + Math.sin(a) * dist, sc.z + Math.cos(a) * dist];
       const others = allIds.filter((id) => id !== shot.target).map((id) => getChar(id, tt)).filter(Boolean).map((c) => [c.x, c.z]);
       return !isOccluded(cam, [sc.x, sc.z], others);
     });
-    if (ok) { chosen = a; break; }
+    if (!ok) continue;
+    const score = (shot.type === 'track' ? 0 : Math.abs(diff - 0.35)) + Math.abs(da) * 0.3;
+    if (score < bestScore) { bestScore = score; chosen = a; }
   }
+  if (chosen == null) chosen = fallback;
   angleCache.set(key, chosen);
   return chosen;
 }

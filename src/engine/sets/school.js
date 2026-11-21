@@ -5,6 +5,7 @@
 // La caméra regarde toujours depuis le côté +z (le « quatrième mur » ouvert).
 // Chaque zone expose des « marques » (positions [x, z] en coordonnées monde) pour la mise en scène.
 import * as THREE from 'three';
+import { ZONE_DATA } from './marks.js';
 
 const mats = new Map();
 function mat(color, extra = {}) {
@@ -136,13 +137,7 @@ function buildHallway(root) {
 
   return {
     group: g,
-    origin: [0, 0],
-    marks: {
-      left: [-15, -1], center: [0, -1], right: [15, -1],
-      farLeft: [-22, 2], farRight: [22, 2],
-      lockerL: [-5.5, -5], lockerR: [5.5, -5], doorL: [-10, -5.5], doorR: [10, -5.5],
-      front: [0, 5],
-    },
+    ...ZONE_DATA.hallway,
   };
 }
 
@@ -197,7 +192,7 @@ function buildClassroom(root) {
   box(g, 1.6, 0.4, 1.2, 0x1e88e5, -8.8, 2.85, oz - 6.3, { cast: true }); // livres
 
   // Pupitres (3 × 3) + chaises
-  for (const row of [2, 8.5, 15]) {
+  for (const row of [9.5, 16]) { // 2 rangs, en retrait : la zone de jeu devant le tableau reste dégagée
     for (const col of [-8, 0, 8]) {
       const z = oz + row;
       box(g, 3.4, 0.25, 2.2, 0xd9a86c, col, 2.5, z, { cast: true });
@@ -214,13 +209,7 @@ function buildClassroom(root) {
 
   return {
     group: g,
-    origin: [0, oz],
-    marks: {
-      board: [0, oz - 7], boardLeft: [-4.5, oz - 6.5], boardRight: [4.5, oz - 6.5],
-      teacherDesk: [-10, oz - 3.5], door: [14.5, oz - 3],
-      aisleLeft: [-4, oz + 5], aisleRight: [4, oz + 5], center: [0, oz - 3],
-      left: [-4.5, oz - 3.5], right: [4.5, oz - 3.5],
-    },
+    ...ZONE_DATA.classroom,
   };
 }
 
@@ -290,17 +279,11 @@ function buildYard(root) {
 
   return {
     group: g,
-    origin: [ox, 0],
-    marks: {
-      center: [ox, 0], left: [ox - 12, 1], right: [ox + 12, 1],
-      farLeft: [ox - 26, 6], farRight: [ox + 26, 6],
-      hoop: [ox + 14, -5], tree: [ox - 19, -6], bench: [ox + 13, 3.5],
-      door: [ox, -19], hopscotch: [ox - 9, 4],
-    },
+    ...ZONE_DATA.yard,
   };
 }
 
-export const ZONES = ['hallway', 'classroom', 'yard'];
+export const ZONES = Object.keys(ZONE_DATA);
 
 /** Construit toute l'école dans la scène et renvoie les zones et leurs marques. */
 export function buildSchool(scene) {
