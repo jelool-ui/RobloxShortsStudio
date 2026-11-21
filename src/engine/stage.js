@@ -35,8 +35,15 @@ export function createStage({ width = 1080, height = 1920, background = 0x87ceeb
   scene.add(sun);
   scene.add(sun.target);
 
+  // Déplace le soleil (et sa zone d'ombre) vers le point filmé
+  function focus(x, z) {
+    sun.position.set(x + 8, 16, z + 10);
+    sun.target.position.set(x, 0, z);
+  }
+
   return {
     renderer,
+    focus,
     scene,
     camera,
     lights: { hemi, sun },

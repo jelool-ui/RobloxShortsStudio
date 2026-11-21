@@ -66,8 +66,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Rendu de test (4 s, scène des personnages) + vérification MP4
-        run: npm run smoke -- --seconds 4 --scene showcase
+      - name: Rendu de test (3 s, démo école) + vérification MP4
+        run: npm run smoke -- --seconds 3 --scene demo
 
       - name: Publier le MP4 de test
         uses: actions/upload-artifact@v5

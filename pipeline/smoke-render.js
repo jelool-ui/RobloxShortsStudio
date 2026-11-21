@@ -1,6 +1,6 @@
 // Test de bout en bout de la chaîne technique (phase 2) :
 // build → Playwright rend N images → FFmpeg (vidéo + bip audio) → vérification ffprobe.
-// Usage : npm run build && npm run smoke  [-- --seconds 3 --scene showcase|test]
+// Usage : npm run build && npm run smoke  [-- --seconds 3 --scene demo|showcase|test]
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, rmSync, existsSync } from 'node:fs';
@@ -11,7 +11,7 @@ import { verifyMp4 } from './lib/verify.js';
 const args = process.argv.slice(2);
 const arg = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d);
 const seconds = Number(arg('--seconds', 2));
-const sceneName = arg('--scene', 'showcase');
+const sceneName = arg('--scene', 'demo');
 const W = 1080, H = 1920, FPS = 30, N = seconds * FPS;
 const outDir = 'output/smoke';
 const framesDir = join(outDir, 'frames');

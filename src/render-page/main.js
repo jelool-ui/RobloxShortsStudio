@@ -3,24 +3,25 @@
 //   window.__RSS_READY      → true quand la scène est prête
 //   window.renderFrame(n)   → dessine l'image n (temps = n / fps), de façon déterministe
 //   window.__RSS_INFO       → { width, height, fps, frames, scene }
-// Paramètres d'URL : w, h, fps, frames, scene (test | showcase)
+// Paramètres d'URL : w, h, fps, frames, scene (test | showcase | demo)
 import { createTestScene } from '../engine/testScene.js';
 import { createStage } from '../engine/stage.js';
 import { buildShowcase } from '../engine/scenes/showcase.js';
+import { buildDemo } from '../engine/scenes/demo.js';
 
 const params = new URLSearchParams(location.search);
 const width = Number(params.get('w') || 1080);
 const height = Number(params.get('h') || 1920);
 const fps = Number(params.get('fps') || 30);
-const sceneName = params.get('scene') || 'showcase';
+const sceneName = params.get('scene') || 'demo';
 
 let renderer, renderAt;
 let debug = {};
 if (sceneName === 'test') {
   ({ renderer, renderAt } = createTestScene({ width, height }));
-} else if (sceneName === 'showcase') {
+} else if (sceneName === 'showcase' || sceneName === 'demo') {
   const stage = createStage({ width, height });
-  const show = buildShowcase(stage);
+  const show = sceneName === 'demo' ? buildDemo(stage) : buildShowcase(stage);
   renderer = stage.renderer;
   renderAt = (t) => { show.update(t); stage.render(); };
   debug = { stage, show };
