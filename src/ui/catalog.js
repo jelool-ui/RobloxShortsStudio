@@ -22,7 +22,7 @@ const STORY_LABELS = {
 };
 export const STORIES = [
   { id: 'auto', label: 'Surprise (au hasard)' },
-  ...TEMPLATES.map((t) => ({ id: t.id, label: STORY_LABELS[t.id] ?? t.id, zones: t.zones })),
+  ...TEMPLATES.map((t) => ({ id: t.id, label: STORY_LABELS[t.id] ?? t.label ?? t.id, zones: t.zones })),
 ];
 
 export const ROLES = [

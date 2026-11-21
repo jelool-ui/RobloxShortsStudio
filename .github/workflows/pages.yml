@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['src/ui/**', 'src/story/templates.js', 'src/engine/characters.js', 'src/engine/sets/marks.js', 'index.html', 'vite.config.js', 'package.json', 'package-lock.json', '.github/workflows/pages.yml']
+    paths: ['src/ui/**', 'src/story/**', 'src/engine/characters.js', 'src/engine/sets/marks.js', 'index.html', 'vite.config.js', 'package.json', 'package-lock.json', '.github/workflows/pages.yml']
 
 permissions:
   contents: read

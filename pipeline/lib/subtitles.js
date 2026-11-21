@@ -25,7 +25,7 @@ export function assTime(t) {
 }
 
 const clean = (s) => s
-  .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '')
+  .replace(/[\p{Extended_Pictographic}‍️]/gu, '')
   .replace(/[{}\\]/g, '')
   .replace(/\s+/g, ' ')
   .trim();

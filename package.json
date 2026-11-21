@@ -15,6 +15,7 @@
     "audio": "node pipeline/audio.js",
     "generate": "node pipeline/generate.js",
     "check:pronunciation": "node pipeline/check-pronunciation.js",
+    "sync:workflow": "node pipeline/sync-workflow.js",
     "test": "node --test tests/*.test.js"
   },
   "dependencies": {

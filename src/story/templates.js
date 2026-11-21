@@ -175,4 +175,16 @@ export const TEMPLATES = [
   },
 ];
 
+
+
+// ------------------------------------------------------------------ histoires au format compact
+import { parseStories } from './dsl.js';
+import classe from './stories/classe.js';
+import couloir from './stories/couloir.js';
+import cour from './stories/cour.js';
+import evenements from './stories/evenements.js';
+import aventures from './stories/aventures.js';
+
+TEMPLATES.push(...[classe, couloir, cour, evenements, aventures].flatMap(parseStories));
+for (const t of TEMPLATES) if (!t.label) t.label = t.titles[0].replace(/[\p{Extended_Pictographic}‍️]/gu, '').replace(/\{[ABC]\}/g, '…').trim();
 export const TEMPLATE_IDS = TEMPLATES.map((t) => t.id);

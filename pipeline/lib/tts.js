@@ -13,7 +13,7 @@ const PY = process.env.PIPER_PYTHON || 'python3';
 /** Texte affiché → texte prononcé (emoji retirés, MAJUSCULES lues comme des mots, ponctuation simple). */
 export function speakable(text) {
   return text
-    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
+    .replace(/[\p{Extended_Pictographic}‍️]/gu, '')
     .replace(/[’‘]/g, "'")
     .replace(/…/g, '...')
     .replace(/[«»]/g, '"')

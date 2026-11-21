@@ -53,3 +53,12 @@ Défaut constaté dans « Le sac de Zoé » : « Et une lampe de poche ? » → 
 - 11 groupes liés ajoutés dans les 6 histoires (vérité, excuse, casier vivant, alarme, roi/champion,
   abeille/guêpe, rumeur, menu soupe/purée, objet, animal girafe/dinosaure avec accords il/elle).
 Note : les graines déjà utilisées ne redonnent plus exactement les mêmes répliques.
+
+## 100 nouvelles histoires (106 au total)
+Format d'écriture compact (`src/story/dsl.js`), une ligne par réplique, converti automatiquement.
+Cinq séries dans `src/story/stories/` : classe (19), couloir (20), cour (20), événements (19), aventures (22).
+Chaque histoire respecte les personnalités (Nino farceur, Zoé la tête, Max le peureux) et finit sur une chute.
+Contrôles passés par les 106 histoires, dans les 4 réglages de décor : durée 45 s sans dépassement ni
+fin trop longue, cohérence des dialogues, aucune traversée de personnages, prononciation
+(1 559 répliques × 3 voix), menus du workflow et de l'interface synchronisés (`npm run sync:workflow`).
+Épisode réel rendu et vérifié : « Le pigeon gourmand ».

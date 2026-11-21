@@ -234,3 +234,48 @@ test('dialogues générés : dans chaque épisode, les répliques liées utilise
     }
   }
 });
+
+// ---------------------------------------------------------------- format compact des histoires
+test('format compact : une histoire est convertie fidèlement', async () => {
+  const { parseStories } = await import('../src/story/dsl.js');
+  const [t] = parseStories(`
+=== test-histoire | Mon test | mystery
+titres: Titre un / Titre deux
+# yard A:left B:center C:farRight
+C.scared!scared mv:C=run>right r:A=surprise,B=laugh punch sfx:ding : Bonjour {A} ! || Salut {A} !
+~1.2 sfx:buzz r:C=jump cam:closeup:C
+A to:B opt : Une réplique simple.
+`);
+  assert.equal(t.id, 'test-histoire');
+  assert.equal(t.label, 'Mon test');
+  assert.equal(t.mood, 'mystery');
+  assert.deepEqual(t.titles, ['Titre un', 'Titre deux']);
+  assert.deepEqual(t.zones, ['yard']);
+  assert.deepEqual(t.steps[0], { zone: 'yard', place: { A: 'left', B: 'center', C: 'farRight' } });
+  assert.deepEqual(t.steps[1], { s: 'C', a: 'scared', e: 'scared', mv: { C: ['run', 'right'] }, r: { A: 'surprise', B: 'laugh' }, punch: true, sfx: 'ding', l: ['Bonjour {A} !', 'Salut {A} !'] });
+  assert.deepEqual(t.steps[2], { hold: 1.2, sfx: 'buzz', r: { C: 'jump' }, cam: 'closeup:C' });
+  assert.deepEqual(t.steps[3], { s: 'A', to: 'B', opt: true, l: ['Une réplique simple.'] });
+});
+
+test('format compact : les erreurs d\'écriture sont signalées avec la ligne', async () => {
+  const { parseStories } = await import('../src/story/dsl.js');
+  const base = '=== ok | Ok\ntitres: T\n# yard A:left B:center C:right\n';
+  assert.throws(() => parseStories('=== Mauvais Id | X\ntitres: T\n# yard A:left'), /identifiant invalide/);
+  assert.throws(() => parseStories(`${base}D.talk : Qui suis-je ?`), /rôle invalide/);
+  assert.throws(() => parseStories(`${base}A.talk sans deux-points`), /« : » manquant/);
+  assert.throws(() => parseStories(`${base}A mv:A=vole>left : Hop`), /déplacement invalide/);
+  assert.throws(() => parseStories(`${base}A bizarre : Hop`), /option inconnue/);
+  assert.throws(() => parseStories('=== sans-decor | X\ntitres: T\nA : Bonjour'), /doit commencer par un décor/);
+  assert.throws(() => parseStories('=== sans-titre | X\n# yard A:left B:center C:right\nA : Bonjour'), /titres manquants/);
+});
+
+test('catalogue : au moins 100 histoires, identifiants uniques, libellés et titres présents', () => {
+  assert.ok(TEMPLATES.length >= 100, `${TEMPLATES.length} histoires`);
+  assert.equal(new Set(TEMPLATE_IDS).size, TEMPLATE_IDS.length, 'identifiants uniques');
+  for (const t of TEMPLATES) {
+    assert.ok(t.label && !/[{}]/.test(t.label), `${t.id} : libellé`);
+    assert.ok(t.titles.length >= 1, `${t.id} : titres`);
+    assert.ok(t.steps.filter((s) => s.l).length >= 8, `${t.id} : au moins 8 répliques`);
+    if (t.mood) assert.ok(['happy', 'mystery'].includes(t.mood), `${t.id} : humeur ${t.mood}`);
+  }
+});

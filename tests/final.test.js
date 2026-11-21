@@ -50,7 +50,7 @@ test('fichier ASS : structure, couleurs des personnages, titre, appel final, pas
   const dialogues = ass.split('\n').filter((l) => l.startsWith('Dialogue:'));
   assert.ok(dialogues.length > sb.dialogue.length * 3);
   assert.ok(ass.includes('ABONNE-TOI'));
-  assert.ok(!/[\u{1F300}-\u{1FAFF}]/u.test(ass), 'aucun emoji (la police ne les a pas)');
+  assert.ok(!/[\p{Extended_Pictographic}‍]/u.test(ass), 'aucun emoji (la police ne les a pas)');
   for (const id of CHARACTER_IDS) assert.ok(SPEAKER_COLORS[id], `couleur pour ${id}`);
   // tous les événements finissent avant la fin de la vidéo
   for (const l of dialogues) {

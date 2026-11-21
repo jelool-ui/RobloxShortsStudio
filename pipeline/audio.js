@@ -6,6 +6,7 @@ import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { generateStory, storyScript, DEFAULT_CAST } from '../src/story/generator.js';
 import { buildStoryboard } from '../src/story/storyboard.js';
+import { TEMPLATES } from '../src/story/templates.js';
 import { randomSeed } from '../src/story/rng.js';
 import { ensureVoices } from './lib/voices.js';
 import { synthesizeLines } from './lib/tts.js';
@@ -55,7 +56,7 @@ export async function produceAudio(story, outDir, { log = console.log } = {}) {
   }
 
   // 3) Musique + bruitages
-  const mood = TEMPLATE_MOOD[story.template] ?? 'happy';
+  const mood = TEMPLATES.find((t) => t.id === story.template)?.mood ?? TEMPLATE_MOOD[story.template] ?? 'happy';
   const music = renderMusic({ seed: story.seed, duration: storyboard.duration, mood });
   const sfx = storyboard.sfx.map((e, i) => ({ t: e.t, samples: renderSfx(e.name, story.seed + i), gain: e.name === 'whoosh' ? 0.35 : 0.45 }));
   writeMono(join(audioDir, 'music.wav'), music.data);
